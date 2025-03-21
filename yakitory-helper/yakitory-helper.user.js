@@ -1,3 +1,4 @@
+// ==UserScript==
 // @name         YAKITORY 控制面板 - iLearn 影音平台自動播放、自動靜音
 // @namespace    https://github.com/poterpan/tampermonkey-scripts/yakitory-helper
 // @version      2.2
@@ -12,6 +13,7 @@
 // @supportURL   https://github.com/poterpan/tampermonkey-scripts/issues
 // @updateURL    https://raw.githubusercontent.com/poterpan/tampermonkey-scripts/main/yakitory-helper/yakitory-helper.user.js
 // @downloadURL  https://raw.githubusercontent.com/poterpan/tampermonkey-scripts/main/yakitory-helper/yakitory-helper.user.js
+// ==/UserScript==
 
 (function() {
     'use strict';
