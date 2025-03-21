@@ -1,4 +1,4 @@
-# 增強版 YAKITORY 控制面板
+# YAKITORY 控制面板 - iLearn 影音平台自動播放、自動靜音
 
 ![版本](https://img.shields.io/badge/版本-2.2-blue)
 ![兼容性](https://img.shields.io/badge/兼容性-Tampermonkey-green)
@@ -26,7 +26,7 @@
 ## 安裝方法
 
 1. 安裝 [Tampermonkey](https://www.tampermonkey.net/) 瀏覽器擴展
-2. 點擊下方安裝連結，或從 [GreasyFork 頁面](https://greasyfork.org/zh-TW/scripts/腳本ID) 安裝
+2. 點擊下方安裝連結，或從 [GreasyFork 頁面](https://greasyfork.org/zh-TW/scripts/530440-yakitory-%E6%8E%A7%E5%88%B6%E9%9D%A2%E6%9D%BF-ilearn-%E5%BD%B1%E9%9F%B3%E5%B9%B3%E5%8F%B0%E8%87%AA%E5%8B%95%E6%92%AD%E6%94%BE-%E8%87%AA%E5%8B%95%E9%9D%9C%E9%9F%B3) 安裝
 3. 確認安裝並刷新 iLearn 頁面
 
 [![安裝脚本](https://img.shields.io/badge/安裝腳本-增強版_YAKITORY_控制面板-blue)](https://raw.githubusercontent.com/poterpan/tampermonkey-scripts/main/yakitory-helper/yakitory-helper.user.js)
