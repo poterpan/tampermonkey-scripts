@@ -1,6 +1,6 @@
 # Facebook 優化版自動戳回
 
-![版本](https://img.shields.io/badge/版本-3.4-blue)
+![版本](https://img.shields.io/badge/版本-3.5.1-blue)
 ![兼容性](https://img.shields.io/badge/兼容性-Tampermonkey-green)
 
 自動在 Facebook 上戳回朋友的腳本，帶有控制面板和統計功能，讓您的戳戳樂更加輕鬆。
@@ -72,6 +72,9 @@ A: 腳本需要找到帶有 "戳回去" 文字的按鈕。如果 Facebook 更改
 A: 可以，通過控制面板調整最小/最大延遲時間來改變戳回頻率。
 
 ## 更新日誌
+
+### 版本 3.5.1
+- 更新 @include URL，以允許匹配所有戳回頁面
 
 ### 版本 3.5
 - 更新 @include URL，以允許匹配所有戳回頁面

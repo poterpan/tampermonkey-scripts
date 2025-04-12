@@ -18,7 +18,7 @@
 
 ### [Facebook 優化版自動戳回](facebook-autopoke/)
 
-[![版本](https://img.shields.io/badge/版本-3.4-blue)](facebook-autopoke/facebook-autopoke.user.js)
+[![版本](https://img.shields.io/badge/版本-3.5.1-blue)](facebook-autopoke/facebook-autopoke.user.js)
 
 為 Facebook 提供自動戳回功能：
 - 自動偵測並戳回朋友

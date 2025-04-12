@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         Facebook 優化版自動戳回
 // @namespace    https://github.com/poterpan/tampermonkey-scripts/facebook-autopoke
-// @version      3.5
+// @version      3.5.1
 // @description  自動在Facebook上戳回朋友，帶有控制面板和統計功能
 // @author       PoterPan
-// @include      https://www.facebook.com/pokes/*
+// @match      https://www.facebook.com/pokes
+// @match      https://www.facebook.com/pokes/*
 // @homepageURL  https://github.com/poterpan/tampermonkey-scripts
 // @supportURL   https://github.com/poterpan/tampermonkey-scripts/issues
 // @updateURL    https://raw.githubusercontent.com/poterpan/tampermonkey-scripts/main/facebook-autopoke/facebook-autopoke.user.js
