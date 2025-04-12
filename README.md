@@ -16,6 +16,17 @@
 
 [查看詳情與安裝說明](yakitory-helper/)
 
+### [Facebook 優化版自動戳回](facebook-autopoke/)
+
+[![版本](https://img.shields.io/badge/版本-3.4-blue)](facebook-autopoke/facebook-autopoke.user.js)
+
+為 Facebook 提供自動戳回功能：
+- 自動偵測並戳回朋友
+- 智能延遲與閒置模式
+- 完整的統計與日誌記錄
+
+[查看詳情與安裝說明](facebook-autopoke/)
+
 ---
 
 ## 如何安裝
