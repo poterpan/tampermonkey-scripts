@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Facebook 優化版自動戳回
 // @namespace    https://github.com/poterpan/tampermonkey-scripts/facebook-autopoke
-// @version      3.5.1
+// @version      3.5.2
 // @description  自動在Facebook上戳回朋友，帶有控制面板和統計功能
 // @author       PoterPan
 // @match      https://www.facebook.com/pokes
@@ -39,6 +39,17 @@
     const processedButtons = new Set();
     let controlPanel = null;     // 控制面板引用
     let timerInterval = null;    // 倒計時計時器
+
+    // 儲存設定到 localStorage
+    function saveSettings() {
+        localStorage.setItem('fb_autopoke_settings', JSON.stringify(settings));
+        console.log('設定已儲存', settings);
+    }
+
+    // 儲存統計到 localStorage
+    function saveStats() {
+        localStorage.setItem('fb_autopoke_stats', JSON.stringify(stats));
+    }
 
     // 創建控制面板
     function createControlPanel() {
@@ -126,7 +137,7 @@
             if (settings.enabled) {
                 scheduleNextPoke(3); // 啟用後3秒開始
             }
-            localStorage.setItem('fb_autopoke_settings', JSON.stringify(settings));
+            saveSettings();
         };
         controls.appendChild(toggleBtn);
 
@@ -189,7 +200,10 @@
                 // 更新設置
                 const settingKey = id.replace('fb_autopoke_', '');
                 settings[settingKey] = parseInt(this.value);
-                localStorage.setItem('fb_autopoke_settings', JSON.stringify(settings));
+                saveSettings();
+                
+                // 記錄變更
+                addLog(`已設定 ${label} 為 ${this.value}`);
             };
 
             item.appendChild(labelEl);
@@ -246,7 +260,8 @@
             stats.totalPokes = 0;
             stats.personalStats = {};
             updateStatsList();
-            localStorage.setItem('fb_autopoke_stats', JSON.stringify(stats));
+            saveStats();
+            addLog("已清除所有統計資料");
         };
         statsDiv.appendChild(clearStatsBtn);
 
@@ -264,6 +279,9 @@
         // 保存面板引用
         controlPanel = panel;
 
+        // 更新面板上各項設定的值
+        updateSettingsDisplay();
+        
         // 更新顯示
         updateStatus();
         updateStatsList();
@@ -272,6 +290,23 @@
         setInterval(updateStatus, 1000);
 
         return panel;
+    }
+
+    // 更新設定顯示
+    function updateSettingsDisplay() {
+        document.getElementById("fb_autopoke_minDelay").value = settings.minDelay;
+        document.getElementById("fb_autopoke_maxDelay").value = settings.maxDelay;
+        document.getElementById("fb_autopoke_idleMinDelay").value = settings.idleMinDelay;
+        document.getElementById("fb_autopoke_idleMaxDelay").value = settings.idleMaxDelay;
+        document.getElementById("fb_autopoke_idleThreshold").value = settings.idleThreshold;
+        
+        // 更新啟用/停用按鈕狀態
+        const toggleBtn = document.getElementById("fb_autopoke_toggle");
+        if (toggleBtn) {
+            toggleBtn.textContent = settings.enabled ? "已啟用" : "已停用";
+            toggleBtn.style.backgroundColor = settings.enabled ? "#42b72a" : "#f5f6f7";
+            toggleBtn.style.color = settings.enabled ? "#fff" : "#4b4f56";
+        }
     }
 
     // 添加日誌
@@ -437,7 +472,7 @@
 
         // 更新下次戳回時間
         stats.nextPokeTime = new Date(Date.now() + seconds * 1000).getTime();
-        localStorage.setItem('fb_autopoke_stats', JSON.stringify(stats));
+        saveStats();
 
         // 更新顯示
         updateStatus();
@@ -534,7 +569,7 @@
         }
 
         // 保存統計
-        localStorage.setItem('fb_autopoke_stats', JSON.stringify(stats));
+        saveStats();
 
         // 更新顯示
         updateStatus();
@@ -554,6 +589,7 @@
             try {
                 const parsed = JSON.parse(savedSettings);
                 Object.assign(settings, parsed);
+                console.log("已載入儲存的設定:", settings);
             } catch (e) {
                 console.error("載入設置失敗:", e);
             }
@@ -565,6 +601,7 @@
             try {
                 const parsed = JSON.parse(savedStats);
                 Object.assign(stats, parsed);
+                console.log("已載入儲存的統計:", stats);
             } catch (e) {
                 console.error("載入統計失敗:", e);
             }
@@ -572,6 +609,9 @@
 
         // 創建控制面板
         createControlPanel();
+        
+        // 加入初次載入的日誌
+        addLog("腳本已初始化" + (settings.enabled ? "，自動戳回已啟用" : "，自動戳回目前停用"));
 
         // 如果設置為啟用，則開始自動戳回
         if (settings.enabled) {
