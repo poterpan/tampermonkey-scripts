@@ -27,6 +27,28 @@
 
 [查看詳情與安裝說明](facebook-autopoke/)
 
+### [NTUT iStudy connect_lost 修復](istudy-connect-lost-fix/)
+
+[![版本](https://img.shields.io/badge/版本-1.3.0-blue)](istudy-connect-lost-fix/istudy-connect-lost-fix.user.js)
+
+修復臺北科技大學 iStudy 登入偶發 "connect lost" 錯誤：
+- 自動偵測異常並清除殘留 session cookie
+- 只清 istudy.ntut.edu.tw 的 cookie，不影響其他 NTUT 服務登入
+- 30 秒防迴圈保護
+
+[查看詳情與安裝說明](istudy-connect-lost-fix/)
+
+### [北科入口網站 - 跳過驗證碼](ntut-portal-skip-captcha/)
+
+[![版本](https://img.shields.io/badge/版本-20250302.1-blue)](ntut-portal-skip-captcha/ntut-portal-skip-captcha.user.js)
+
+臺北科技大學校園入口網站免驗證碼登入（Fork 自 [umeow](https://greasyfork.org/zh-TW/scripts/508559)）：
+- 跳過登入驗證碼
+- 修復登入後偶發卡在白屏需手動 logout 的問題
+- 預判已登入狀態自動跳轉
+
+[查看詳情與安裝說明](ntut-portal-skip-captcha/)
+
 ---
 
 ## 如何安裝
