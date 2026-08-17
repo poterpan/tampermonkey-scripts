@@ -49,6 +49,17 @@
 
 [查看詳情與安裝說明](ntut-portal-skip-captcha/)
 
+### [北科入口網站 - 驗證碼自動辨識登入（新版 cloudPortal）](ntut-portal-ocr-login/)
+
+[![版本](https://img.shields.io/badge/版本-20260817.4-blue)](ntut-portal-ocr-login/ntut-portal-ocr-login.user.js)
+
+臺北科技大學校園入口網站 2026 改版後，於瀏覽器**本地用 CNN 自動辨識驗證碼**並登入，直接進入新版 `cloudPortal` 介面：
+- 顏色分割 + 每字 CNN，純本地推論、**不呼叫任何外部 API**
+- 完整 web 登入 + 辨識失敗自動刷新重試、多次失敗回退手動
+- 模型僅 ~190KB 內嵌，單張辨識 ≈94%、含重試 ≈99.99%
+
+[查看詳情與安裝說明](ntut-portal-ocr-login/)
+
 ---
 
 ## 如何安裝
