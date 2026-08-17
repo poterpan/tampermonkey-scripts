@@ -38,14 +38,13 @@
 
 [查看詳情與安裝說明](istudy-connect-lost-fix/)
 
-### [北科入口網站 - 跳過驗證碼](ntut-portal-skip-captcha/)
+### [北科入口網站 - 跳過驗證碼](ntut-portal-skip-captcha/) ⚠️ 已棄用
 
-[![版本](https://img.shields.io/badge/版本-20250302.1-blue)](ntut-portal-skip-captcha/ntut-portal-skip-captcha.user.js)
+[![版本](https://img.shields.io/badge/版本-20260817.1-lightgrey)](ntut-portal-skip-captcha/ntut-portal-skip-captcha.user.js)
+[![狀態](https://img.shields.io/badge/狀態-已棄用-red)](ntut-portal-skip-captcha/)
 
-臺北科技大學校園入口網站免驗證碼登入（Fork 自 [umeow](https://greasyfork.org/zh-TW/scripts/508559)）：
-- 跳過登入驗證碼
-- 修復登入後偶發卡在白屏需手動 logout 的問題
-- 預判已登入狀態自動跳轉
+臺北科技大學校園入口網站免驗證碼登入（Fork 自 [umeow](https://greasyfork.org/zh-TW/scripts/508559)）。
+**已棄用**：只能進入舊版 UI，學校改版後請改用上方的「驗證碼自動辨識登入（新版 cloudPortal）」。
 
 [查看詳情與安裝說明](ntut-portal-skip-captcha/)
 

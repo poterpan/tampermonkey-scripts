@@ -1,7 +1,13 @@
-# 北科入口網站 - 跳過驗證碼
+# 北科入口網站 - 跳過驗證碼（已棄用）
 
-![版本](https://img.shields.io/badge/版本-20250302.1-blue)
+![版本](https://img.shields.io/badge/版本-20260817.1-lightgrey)
+![狀態](https://img.shields.io/badge/狀態-已棄用-red)
 ![兼容性](https://img.shields.io/badge/兼容性-Tampermonkey-green)
+
+> ⚠️ **已棄用**：本腳本用 App 式登入跳過驗證碼，但只能進入**舊版**入口 UI。學校改版後入口已改為新版 `cloudPortal`。
+> 👉 請改用 **[北科入口網站 - 驗證碼自動辨識登入（新版 cloudPortal）](../ntut-portal-ocr-login/)**——本地 CNN 自動辨識驗證碼、走正規 web 登入、直接進入新版介面。
+>
+> 以下內容保留作為存檔。
 
 臺北科技大學校園入口網站（`nportal.ntut.edu.tw`）跳過登入驗證碼的 Tampermonkey 腳本，並修復登入後偶發卡在白屏的問題。
 

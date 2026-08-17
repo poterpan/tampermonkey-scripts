@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         北科入口網站 - 跳過驗證碼
+// @name         北科入口網站 - 跳過驗證碼（已棄用）
 // @namespace    https://github.com/poterpan/tampermonkey-scripts/ntut-portal-skip-captcha
-// @version      20250302.1
-// @description  臺北科技大學校園入口網站免驗證碼登入，並修復登入後偶發卡在白屏的問題。Fork 自 umeow 的原始腳本並加入白屏修復。
+// @version      20260817.1
+// @description  【已棄用】此腳本用 App 式登入跳過驗證碼，但只能進入舊版入口 UI；學校改版後入口已改為新版 cloudPortal。請改用「北科入口網站 - 驗證碼自動辨識登入」：https://github.com/poterpan/tampermonkey-scripts/tree/main/ntut-portal-ocr-login ｜ 原功能：免驗證碼登入 + 白屏修復（Fork 自 umeow）。
 // @author       PoterPan (Fork from umeow - https://greasyfork.org/zh-TW/scripts/508559)
 // @match        https://nportal.ntut.edu.tw/*
 // @icon         https://www.ntut.edu.tw/var/file/7/1007/msys_1007_5994215_49612.png
@@ -72,20 +72,34 @@ const isLogined = async () => {
 }
 
 const deleteAuthcode = () => {
-    const authCodeDiv = document.querySelector(".authcode");
-    if(authCodeDiv) {
-        if(authCodeDiv.nextElementSibling) authCodeDiv.nextElementSibling.remove();
-        authCodeDiv.remove();
+    // 2026 改版：新版登入頁改用 Bootstrap，已無 .authcode 這個 class。
+    // 驗證碼輸入框現在是 #authcode，位於一個 <div class="mb-3"> 容器內，
+    // 前面緊接一個 <label>驗證碼 CAPTCHA</label>。
+    const authInput = document.querySelector("#authcode");
+    if(authInput) {
+        // 連同容器（含驗證碼圖片與刷新鈕）與前面的 label 一起移除
+        const authRow = authInput.closest(".mb-3") || authInput.parentElement;
+        if(authRow) {
+            const prevLabel = authRow.previousElementSibling;
+            if(prevLabel && prevLabel.tagName === "LABEL") prevLabel.remove();
+            authRow.remove();
+        }
 
-        window.unsafeWindow.login1 = async () => {
+        // 覆寫原生 login1（新版會先用 Blowfish 加密密碼且強制檢查驗證碼），
+        // 改走 App 式明文登入（後端仍接受，免驗證碼）。表單的 onsubmit="login1()" 會吃到這個覆寫。
+        window.unsafeWindow.login1 = () => {
             const muid = document.querySelector("#muid").value;
             const mpassword = document.querySelector("#mpassword").value;
             if(!muid || !mpassword) return alert("請輸入帳號密碼");
             login(muid, mpassword);
         }
 
+        // 阻擋驗證碼圖片的抓取／刷新（元素已移除，避免原生函式對 null 設 src 出錯）
         window.unsafeWindow.changeAuthImage = () => {
             console.log("阻擋驗證碼獲取");
+        }
+        window.unsafeWindow.refreshAuthImage = () => {
+            console.log("阻擋驗證碼刷新");
         }
     } else {
         setTimeout(deleteAuthcode, 100);
@@ -342,8 +356,8 @@ function getHtmlTemplate(muid) {
 	<link rel="stylesheet" type="text/css" href="images/eip3.css">
 	<link rel="stylesheet" type="text/css" href="images/cal/cal.css">
 	<link rel="stylesheet" type="text/css" href="images/header/header.css">
-	<link rel="stylesheet" type="text/css" href="template/ntut/appView/layout.css">
-	<link rel="stylesheet" type="text/css" href="template/ntut/eip3.css">
+	<link rel="stylesheet" type="text/css" href="template/ntutad/appView/layout.css">
+	<link rel="stylesheet" type="text/css" href="template/ntutad/eip3.css">
     <script type="text/javascript" src="eip2-js/ajax.js"></script>
     <script type="text/javascript" src="eip2-js/box_activity.js"></script>
     <script type="text/javascript" src="eip2-js/box_announce.js"></script>
@@ -354,12 +368,10 @@ function getHtmlTemplate(muid) {
 	<script type="text/javascript" src="eip2-js/box_calendar.js"></script>
 	<script type="text/javascript" src="eip2-js/box_efolder.js"></script>
 	<script type="text/javascript" src="eip2-js/box_forum.js"></script>
-	<script type="text/javascript" src="eip2-js/box_ldapbox.js"></script>
 	<script type="text/javascript" src="eip2-js/box_log.js"></script>
 	<script type="text/javascript" src="eip2-js/box_message.js"></script>
 	<script type="text/javascript" src="eip2-js/box_orgtree.js"></script>
 	<script type="text/javascript" src="eip2-js/box_password.js"></script>
-	<script type="text/javascript" src="eip2-js/box_profile.js"></script>
 	<script type="text/javascript" src="eip2-js/box_questionary.js"></script>
 	<script type="text/javascript" src="eip2-js/box_session.js"></script>
 	<script type="text/javascript" src="eip2-js/box_survey.js"></script>
@@ -371,9 +383,9 @@ function getHtmlTemplate(muid) {
 	<script type="text/javascript" src="eip2-js/eip-transfer.js"></script>
 	<script type="text/javascript" src="eip2-js/eip3-dom-event.js"></script>
 	<script type="text/javascript" src="eip2-js/stationery.js"></script>
-	<script type="text/javascript" src="eip2-js/jquery-3.6.0.min.js"></script>
+	<script type="text/javascript" src="eip2-js/jquery-3.7.1.min.js"></script>
 	<script type="text/javascript" src="eip2-js/notify.min.js"></script>
-	<script type="text/javascript" src="template/ntut/eip2.js"></script>
+	<script type="text/javascript" src="template/ntutad/eip2.js"></script>
 	<script type="text/javascript" src="htmlEdit/wysiwyg.js"></script>
 	<script type="text/javascript" src="dojo-1.17.3/dojo/dojo.js" djConfig="parseOnLoad:true"></script>
 	<script>
@@ -418,7 +430,7 @@ div.boxOuter.boxDragSortActive {
 	#Column1, #Column2, #Column3 {width:96%; height:auto;}
 }
 .words{ font-size:12pt; font-family:微軟正黑體; background:#FAFAFA; }
-#header{ background-image:url('template/ntut/header_back_std.jpg'); height:105px; width: 100%; position:relative; }
+#header{ background-image:url('template/ntutad/header_back_std.jpg'); height:105px; width: 100%; position:relative; }
 </style>
 <body class="tundra" style="height:100%;">
 <div id="mainContainer" dojoType="dijit.layout.BorderContainer" data-dojo-props="design:'headline', gutters:false" style="width:100%; height:100%;">
