@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         北科入口網站 - 驗證碼自動辨識登入（新版 cloudPortal）
-// @namespace    https://github.com/poterpan/tampermonkey-scripts/ntut-portal-ocr-login
+// @name         北科入口網站小幫手
+// @namespace    https://github.com/poterpan/tampermonkey-scripts/ntut-portal-helper
 // @version      __VERSION__
-// @description  臺北科大校園入口網站：顏色分割 + 本地每字 CNN 自動辨識驗證碼 → 走正規 web 登入 → 進入新版 cloudPortal 介面。純本地推論、不呼叫任何外部 API；辨識失敗自動刷新重試，多次失敗回退手動輸入。
+// @description  臺北科大校園入口網站小幫手：①驗證碼自動辨識登入（進入新版 cloudPortal）②防閒置自動登出（可選）。純本地推論、不呼叫任何外部 API；辨識失敗自動刷新重試，多次失敗回退手動。
 // @author       PoterPan
 // @match        https://nportal.ntut.edu.tw/*
 // @icon         https://www.ntut.edu.tw/var/file/7/1007/msys_1007_5994215_49612.png
@@ -10,18 +10,40 @@
 // @grant        unsafeWindow
 // @homepageURL  https://github.com/poterpan/tampermonkey-scripts
 // @supportURL   https://github.com/poterpan/tampermonkey-scripts/issues
-// @updateURL    https://raw.githubusercontent.com/poterpan/tampermonkey-scripts/main/ntut-portal-ocr-login/ntut-portal-ocr-login.user.js
-// @downloadURL  https://raw.githubusercontent.com/poterpan/tampermonkey-scripts/main/ntut-portal-ocr-login/ntut-portal-ocr-login.user.js
+// @updateURL    https://raw.githubusercontent.com/poterpan/tampermonkey-scripts/main/ntut-portal-helper/ntut-portal-helper.user.js
+// @downloadURL  https://raw.githubusercontent.com/poterpan/tampermonkey-scripts/main/ntut-portal-helper/ntut-portal-helper.user.js
 // @license      MIT
 // ==/UserScript==
 (function () {
   "use strict";
-  if (location.pathname !== "/index.do") return;
+  var KEEP_KEY = "ntutHelper_keepAlive"; // 「保持登入」設定（localStorage，同源跨頁共用）
 
+  // ============ 功能二：保持登入（登入後的內頁執行） ============
+  // cloudPortal/EIP 的登出由前端閒置倒數觸發（InitTime=30*60 秒，updateTime 每秒遞減，
+  // 以 sessionActTime 計算閒置）。resetTime() 會把閒置歸零並關掉警告框；定時呼叫即可不因閒置登出。
+  function startKeepAlive() {
+    function ka() {
+      try { if (typeof unsafeWindow.resetTime === "function") { unsafeWindow.resetTime(); return; } } catch (e) {}
+      try {
+        document.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        document.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Shift" }));
+      } catch (e) {}
+    }
+    ka();
+    setInterval(ka, 60 * 1000);
+    console.log("[NTUT小幫手] 保持登入已啟用（防閒置自動登出）");
+  }
+
+  if (location.pathname !== "/index.do") {
+    try { if (localStorage.getItem(KEEP_KEY) === "1") startKeepAlive(); } catch (e) {}
+    return; // 內頁只跑保持登入，不載入辨識模型
+  }
+
+  // ============ 功能一：驗證碼自動辨識登入（登入頁執行） ============
   const MODEL = { b64: "__WEIGHTS_B64__", manifest: __MANIFEST__, chars: "__CHARS__" };
   const W = 135, H = 39, SZ = 40, MAX_TRIES = 6;
 
-  // ---------- weights (float16) ----------
+  // ---- 權重（float16）----
   function halfToFloat(h) {
     const s = (h & 0x8000) >> 15, e = (h & 0x7c00) >> 10, f = h & 0x03ff;
     if (e === 0) return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
@@ -43,7 +65,7 @@
   }
   const L = loadWeights();
 
-  // ---------- colour-based glyph segmentation (mirrors segment.py) ----------
+  // ---- 顏色分割（對齊 segment.py）----
   function segmentGlyphs(getPixel) {
     const stat = new Map();
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -80,7 +102,7 @@
     return out;
   }
 
-  // ---------- CharNet forward (1x40x40 -> 26) ----------
+  // ---- CharNet 前向 ----
   function conv3(inp, w, ws, b) {
     const [OC, IC] = ws, { d, H: h, W: wd } = inp, out = new Float32Array(OC * h * wd);
     for (let oc = 0; oc < OC; oc++) {
@@ -121,7 +143,6 @@
     return MODEL.chars[bi];
   }
 
-  // ---------- fetch a fresh captcha and solve (null if segmentation fails) ----------
   async function solveCaptcha() {
     const r = await fetch("/authImage.do?t=" + Date.now() + "_" + Math.random(), { cache: "no-store", credentials: "include" });
     const bmp = await createImageBitmap(await r.blob());
@@ -134,7 +155,7 @@
     return gs.map((g) => charForward(g)).join("");
   }
 
-  // ---------- captcha region -> script-status card ----------
+  // ---- 驗證碼區塊 -> 狀態卡（含保持登入開關）----
   let statusText = null, statusCard = null, captchaRow = null, captchaLabel = null;
   function setStatus(text, kind) {
     if (!statusText) return;
@@ -152,13 +173,23 @@
     if (captchaLabel) captchaLabel.style.display = "none";
     statusCard = document.createElement("div");
     statusCard.className = "mb-3";
-    statusCard.style.cssText = "border:1px solid #2a6;border-radius:8px;padding:9px 12px;background:#f4fbf7;display:flex;align-items:center;gap:10px";
+    statusCard.style.cssText = "border:1px solid #2a6;border-radius:8px;padding:9px 12px;background:#f4fbf7";
     statusCard.innerHTML =
-      '<span style="font-size:20px">🤖</span>' +
-      '<div style="line-height:1.35"><div style="font-weight:700;color:#2a6;font-size:13px">驗證碼自動辨識</div>' +
-      '<div id="__ocrStatus" style="font-size:12px;color:#2a6">已啟用 · 直接按登入即可</div></div>';
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<span style="font-size:20px">🤖</span>' +
+        '<div style="line-height:1.35"><div style="font-weight:700;color:#2a6;font-size:13px">驗證碼自動辨識</div>' +
+        '<div id="__ocrStatus" style="font-size:12px;color:#2a6">已啟用 · 直接按登入即可</div></div>' +
+      '</div>' +
+      '<label style="display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #d6ecdf;font-size:12px;color:#555;cursor:pointer">' +
+        '<input type="checkbox" id="__keepAlive" style="margin:0;cursor:pointer"> 保持登入（防閒置 30 分鐘自動登出）' +
+      '</label>';
     if (captchaRow && captchaRow.parentNode) captchaRow.parentNode.insertBefore(statusCard, captchaRow);
     statusText = statusCard.querySelector("#__ocrStatus");
+    const kaBox = statusCard.querySelector("#__keepAlive");
+    try { kaBox.checked = localStorage.getItem(KEEP_KEY) === "1"; } catch (e) {}
+    kaBox.addEventListener("change", function () {
+      try { localStorage.setItem(KEEP_KEY, kaBox.checked ? "1" : "0"); } catch (e) {}
+    });
   }
   function revealCaptcha() {
     if (captchaLabel) captchaLabel.style.display = "";
@@ -167,7 +198,7 @@
   }
   const say = (t) => setStatus(t, "work");
 
-  // ---------- login flow ----------
+  // ---- 登入流程 ----
   let autoMode = true;
   function getField(id) { const el = document.getElementById(id) || document.querySelector('[name="' + id + '"]'); return el ? el.value : ""; }
 
@@ -184,7 +215,7 @@
       say("驗證碼自動辨識中… (" + tryN + "/" + MAX_TRIES + ")");
       let code;
       try { code = await solveCaptcha(); } catch (e) { continue; }
-      if (!code) continue; // segmentation failed -> fetch a fresh captcha
+      if (!code) continue;
       const body = new URLSearchParams({ muid, mpassword: enc, authcode: code, token, md5Code, ssoId });
       let text = "";
       try {
@@ -197,7 +228,6 @@
       if (/密碼錯誤|帳號或密碼/.test(text)) { setStatus("帳號或密碼錯誤", "err"); alert("帳號或密碼錯誤，請重新輸入"); return; }
       if (/已被鎖住|鎖/.test(text)) { setStatus("帳號已被鎖住", "err"); alert("帳號已被鎖住"); return; }
       if (/密碼已過期/.test(text)) { setStatus("密碼已過期", "err"); alert("密碼已過期，請用網頁端重設"); return; }
-      // else: captcha wrong -> loop retries with a fresh captcha
     }
     autoMode = false;
     revealCaptcha();
@@ -205,7 +235,7 @@
     alert("自動辨識驗證碼多次失敗，已切換手動：請輸入畫面上的驗證碼後再按一次登入。");
   }
 
-  // ---------- hook the login button ----------
+  // ---- 掛住登入按鈕 ----
   let nativeLogin1 = null, hooked = false;
   function hook() {
     const uw = unsafeWindow;
