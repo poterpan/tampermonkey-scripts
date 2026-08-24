@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         北科入口網站小幫手
 // @namespace    https://github.com/poterpan/tampermonkey-scripts/ntut-portal-helper
-// @version      20260817.5
+// @version      20260825.1
 // @description  臺北科大校園入口網站小幫手：①驗證碼自動辨識登入（進入新版 cloudPortal）②防閒置自動登出（可選）。純本地推論、不呼叫任何外部 API；辨識失敗自動刷新重試，多次失敗回退手動。
 // @author       PoterPan
 // @match        https://nportal.ntut.edu.tw/*
@@ -198,6 +198,19 @@
   }
   const say = (t) => setStatus(t, "work");
 
+  // POST /login.do 的結果：redirect → 跟隨，登入頁 → 重試，其餘→ 交給校方後續頁面。
+  function classifyLoginResponse(resp, text) {
+    if (resp.redirected && !/\/(?:index|login)\.do(?:[?#]|$)/i.test(resp.url)) return "success";
+    if (/<form[^>]+(?:name=["']login["']|id=["']login["'])|id=["']authcode["']/i.test(text)) return "login_page";
+    return "follow_up";
+  }
+
+  function renderLoginResponse(doc, text) {
+    doc.open();
+    doc.write(text);
+    doc.close();
+  }
+
   // ---- 登入流程 ----
   let autoMode = true;
   function getField(id) { const el = document.getElementById(id) || document.querySelector('[name="' + id + '"]'); return el ? el.value : ""; }
@@ -221,13 +234,18 @@
       try {
         const resp = await fetch("/login.do", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body, credentials: "include" });
         text = await resp.text();
-        if ((resp.redirected && !/index\.do/.test(resp.url)) || (!/authImage|authcode/.test(text) && !/驗證碼|密碼|帳號|鎖/.test(text))) {
-          setStatus("登入成功，載入新版入口…", "ok"); location.href = "https://nportal.ntut.edu.tw/cloudPortal.do"; return;
+        const result = classifyLoginResponse(resp, text);
+        if (result === "success") {
+          setStatus("登入成功，跟隨重定向…", "ok"); location.href = resp.url; return;
+        }
+        if (result === "login_page") {
+          say("驗證碼錯誤，刷新後重試…");
+        } else {
+          setStatus("正在處理後續頁面…", "work");
+          renderLoginResponse(document, text);
+          return;
         }
       } catch (e) { say("連線問題，重試中…"); continue; }
-      if (/密碼錯誤|帳號或密碼/.test(text)) { setStatus("帳號或密碼錯誤", "err"); alert("帳號或密碼錯誤，請重新輸入"); return; }
-      if (/已被鎖住|鎖/.test(text)) { setStatus("帳號已被鎖住", "err"); alert("帳號已被鎖住"); return; }
-      if (/密碼已過期/.test(text)) { setStatus("密碼已過期", "err"); alert("密碼已過期，請用網頁端重設"); return; }
     }
     autoMode = false;
     revealCaptcha();

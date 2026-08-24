@@ -1,6 +1,6 @@
 # 北科入口網站小幫手
 
-![版本](https://img.shields.io/badge/版本-20260817.5-blue)
+![版本](https://img.shields.io/badge/版本-20260825.1-blue)
 ![兼容性](https://img.shields.io/badge/兼容性-Tampermonkey-green)
 ![推論](https://img.shields.io/badge/推論-100%25_本地-orange)
 
@@ -20,6 +20,8 @@
 **準確率**：真實驗證碼單張辨識 char ≈ 98% / 整組 ≈ 94%，配合自動重試實際成功率 ≈ 99.99%。
 
 模型以「合成預訓練 + 真實驗證碼（ddddocr 自動標註約 6,800 張）微調」訓練；管線與權重見 [`training/`](training/)。
+
+**登入後的跳轉**：入口網的 `login.do` 不走 HTTP 302，而是回一段 HTML、在裡面用 JS 的 `location.href` 指定下一步。腳本因此不自行猜測目的地，一律跟隨伺服器的指示——密碼過期強制修改、手機簡訊驗證、服務條款同意等後續流程都會原樣呈現，交由入口網自己的頁面接手。
 
 ## 功能二：保持登入（預設關閉）
 
