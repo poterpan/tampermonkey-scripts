@@ -47,7 +47,8 @@
 1. 安裝 [Tampermonkey](https://www.tampermonkey.net/) 瀏覽器擴展
 2. 點擊下方安裝連結，Tampermonkey 會自動識別並提示安裝
 
-[![安裝腳本](https://img.shields.io/badge/安裝腳本-北科入口網站小幫手-blue)](https://raw.githubusercontent.com/poterpan/tampermonkey-scripts/main/ntut-portal-helper/ntut-portal-helper.user.js)
+[![安裝腳本](https://img.shields.io/badge/安裝腳本-Greasy_Fork-blue)](https://update.greasyfork.org/scripts/591763/%E5%8C%97%E7%A7%91%E5%85%A5%E5%8F%A3%E7%B6%B2%E7%AB%99%E5%B0%8F%E5%B9%AB%E6%89%8B.user.js)
+[![Greasy Fork 頁面](https://img.shields.io/badge/Greasy_Fork-腳本頁面-670000)](https://greasyfork.org/zh-TW/scripts/591763)
 
 安裝後到 `nportal.ntut.edu.tw` 登入頁，輸入帳號密碼按登入即可（驗證碼欄已變成自動辨識狀態卡）；需要保持登入就勾一下卡片上的選項。
 
