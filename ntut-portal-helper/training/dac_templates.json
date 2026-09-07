@@ -1,0 +1,218 @@
+{
+ "source": "dacAuthImage.do?r=86&g=153&b=247&w=100&h=35&fontSize=25",
+ "image_size": [
+  35,
+  100
+ ],
+ "chars": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+ "templates": [
+  {
+   "char": "A",
+   "shape": [
+    19,
+    15
+   ],
+   "bits": "A4AHABsANgBsAYwDGAYwDHAwYGDA/8P/hgMMBzAGYAzAH4A4"
+  },
+  {
+   "char": "B",
+   "shape": [
+    19,
+    12
+   ],
+   "bits": "/w/8wOwGwGwGwGwc/4/8wOwHwDwDwDwHwO/+/4A="
+  },
+  {
+   "char": "C",
+   "shape": [
+    19,
+    14
+   ],
+   "bits": "A+A/4cGOAnABwAYAGADgA4AOABgAYAHABwAOAhwcP+A+AA=="
+  },
+  {
+   "char": "D",
+   "shape": [
+    19,
+    13
+   ],
+   "bits": "/gf8MHmBzAdgGwDYB8A+AfAPgHwDYBsB2BzB5/w/gA=="
+  },
+  {
+   "char": "E",
+   "shape": [
+    19,
+    10
+   ],
+   "bits": "///8AwDAMAwDAP+/7AMAwDAMAwDAP//8"
+  },
+  {
+   "char": "F",
+   "shape": [
+    19,
+    10
+   ],
+   "bits": "///8AwDAMAwDAP+/7AMAwDAMAwDAMAwA"
+  },
+  {
+   "char": "G",
+   "shape": [
+    19,
+    14
+   ],
+   "bits": "A/A/4eHOAHABwAYAGADgA4P+D9gDYA3ANwDOAxwcP/A/AA=="
+  },
+  {
+   "char": "H",
+   "shape": [
+    19,
+    13
+   ],
+   "bits": "wD4B8A+AfAPgHwD4B/////APgHwD4B8A+AfAPgHwDg=="
+  },
+  {
+   "char": "I",
+   "shape": [
+    19,
+    2
+   ],
+   "bits": "//////w="
+  },
+  {
+   "char": "J",
+   "shape": [
+    19,
+    10
+   ],
+   "bits": "AMAwDAMAwDAMAwDAMAwDAMAwDQfjn+Pg"
+  },
+  {
+   "char": "K",
+   "shape": [
+    19,
+    13
+   ],
+   "bits": "wHYHMDGDDDhjgzgbwN4H+DzBxwwYYOMDmAzAdgGwDg=="
+  },
+  {
+   "char": "L",
+   "shape": [
+    19,
+    10
+   ],
+   "bits": "wDAMAwDAMAwDAMAwDAMAwDAMAwDAP//8"
+  },
+  {
+   "char": "M",
+   "shape": [
+    19,
+    15
+   ],
+   "bits": "wA/AP4B9gPsDdgb2Dewz2GeYzzMeZjxoePDx4eGDwweADwAY"
+  },
+  {
+   "char": "N",
+   "shape": [
+    19,
+    13
+   ],
+   "bits": "wD8B+A9gfwPsH2D5h84+MfHPhnwb4N8DeBvAfgPwDg=="
+  },
+  {
+   "char": "O",
+   "shape": [
+    19,
+    16
+   ],
+   "bits": "A+AP+Bw8OA5wBmAHYAdgA+AD4APgA2ADYAdgBnAOOA4cPA/4A+A="
+  },
+  {
+   "char": "P",
+   "shape": [
+    19,
+    12
+   ],
+   "bits": "/w/8wOwGwHwHwGwGwO/8/wwAwAwAwAwAwAwAwAA="
+  },
+  {
+   "char": "Q",
+   "shape": [
+    23,
+    16
+   ],
+   "bits": "A+AP+Bw8OA5wBmAHYAdgA+AD4APgA2ADYAdwBnAGOA4cHA/4B+ABwADgAH8AHw=="
+  },
+  {
+   "char": "R",
+   "shape": [
+    19,
+    12
+   ],
+   "bits": "/4/8wOwGwHwHwHwGwe/8/wxww4wYwcwMwOwGwHA="
+  },
+  {
+   "char": "S",
+   "shape": [
+    19,
+    13
+   ],
+   "bits": "D4D/DhzgBgA4AcAHgB8APgB8AOADgBwA6Abwcf8H8A=="
+  },
+  {
+   "char": "T",
+   "shape": [
+    19,
+    13
+   ],
+   "bits": "////wcAOAHADgBwA4AcAOAHADgBwA4AcAOAHADgBwA=="
+  },
+  {
+   "char": "U",
+   "shape": [
+    19,
+    14
+   ],
+   "bits": "4B+AfgH4B+AfgH4B+AfgH4B+AfgH4B2AZgGcDjhwf4D8AA=="
+  },
+  {
+   "char": "V",
+   "shape": [
+    19,
+    14
+   ],
+   "bits": "4A+ANgHYBnAYwOMDDgwYMGGBhgMYDOAzAOwBsAeAHgA4AA=="
+  },
+  {
+   "char": "W",
+   "shape": [
+    19,
+    20
+   ],
+   "bits": "wGA8BgPA8D4PB2DwZgsGYZhmGYZxmOMZjDMMwzDMMwzDsMwaBYHgeB4HgeB4HAOA"
+  },
+  {
+   "char": "X",
+   "shape": [
+    19,
+    13
+   ],
+   "bits": "4DMDnBhhw4wM4HYB8A8AOAPAPwGYHODDDhxgdwGwDg=="
+  },
+  {
+   "char": "Y",
+   "shape": [
+    19,
+    13
+   ],
+   "bits": "4BsB3Axg4wYMcGMDmA2AfAHADgBwA4AcAOAHADgBwA=="
+  },
+  {
+   "char": "Z",
+   "shape": [
+    19,
+    13
+   ],
+   "bits": "f/v/wAwAwA4AYAcAcAMAOAGAHAHADADgBgBgB////g=="
+  }
+ ]
+}

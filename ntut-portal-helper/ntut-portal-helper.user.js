@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         北科入口網站小幫手
 // @namespace    https://github.com/poterpan/tampermonkey-scripts/ntut-portal-helper
-// @version      20260825.1
-// @description  臺北科大校園入口網站小幫手：①驗證碼自動辨識登入（進入新版 cloudPortal）②防閒置自動登出（可選）。純本地推論、不呼叫任何外部 API；辨識失敗自動刷新重試，多次失敗回退手動。
+// @version      20260907.1
+// @description  臺北科大校園入口網站小幫手：①驗證碼自動辨識登入（進入新版 cloudPortal）②防閒置自動登出（可選）③OAuth2 授權登入頁自動填驗證碼（只填不送）。純本地推論、不呼叫任何外部 API；辨識失敗自動刷新重試，多次失敗回退手動。
 // @author       PoterPan
 // @match        https://nportal.ntut.edu.tw/*
 // @icon         https://www.ntut.edu.tw/var/file/7/1007/msys_1007_5994215_49612.png
@@ -32,6 +32,131 @@
     ka();
     setInterval(ka, 60 * 1000);
     console.log("[NTUT小幫手] 保持登入已啟用（防閒置自動登出）");
+  }
+
+  // ============ 功能三：OAuth2 授權登入頁自動填驗證碼 ============
+  // 第三方 client 導到 oauth2Server.do 時出現的登入頁，用的是 dacAuthImage.do，
+  // 與 index.do 的 authImage.do 不同：4 碼純大寫 A-Z、無扭曲無雜訊，而且每個字形
+  // 每次渲染的 bitmap 完全一致，所以不必動用 CharNet，逐位元查表即可。
+  // 這裡只把驗證碼填進欄位，帳密與送出都留給使用者。
+  const DAC = {"source":"dacAuthImage.do?r=86&g=153&b=247&w=100&h=35&fontSize=25","image_size":[35,100],"chars":"ABCDEFGHIJKLMNOPQRSTUVWXYZ","templates":[{"char":"A","shape":[19,15],"bits":"A4AHABsANgBsAYwDGAYwDHAwYGDA/8P/hgMMBzAGYAzAH4A4"},{"char":"B","shape":[19,12],"bits":"/w/8wOwGwGwGwGwc/4/8wOwHwDwDwDwHwO/+/4A="},{"char":"C","shape":[19,14],"bits":"A+A/4cGOAnABwAYAGADgA4AOABgAYAHABwAOAhwcP+A+AA=="},{"char":"D","shape":[19,13],"bits":"/gf8MHmBzAdgGwDYB8A+AfAPgHwDYBsB2BzB5/w/gA=="},{"char":"E","shape":[19,10],"bits":"///8AwDAMAwDAP+/7AMAwDAMAwDAP//8"},{"char":"F","shape":[19,10],"bits":"///8AwDAMAwDAP+/7AMAwDAMAwDAMAwA"},{"char":"G","shape":[19,14],"bits":"A/A/4eHOAHABwAYAGADgA4P+D9gDYA3ANwDOAxwcP/A/AA=="},{"char":"H","shape":[19,13],"bits":"wD4B8A+AfAPgHwD4B/////APgHwD4B8A+AfAPgHwDg=="},{"char":"I","shape":[19,2],"bits":"//////w="},{"char":"J","shape":[19,10],"bits":"AMAwDAMAwDAMAwDAMAwDAMAwDQfjn+Pg"},{"char":"K","shape":[19,13],"bits":"wHYHMDGDDDhjgzgbwN4H+DzBxwwYYOMDmAzAdgGwDg=="},{"char":"L","shape":[19,10],"bits":"wDAMAwDAMAwDAMAwDAMAwDAMAwDAP//8"},{"char":"M","shape":[19,15],"bits":"wA/AP4B9gPsDdgb2Dewz2GeYzzMeZjxoePDx4eGDwweADwAY"},{"char":"N","shape":[19,13],"bits":"wD8B+A9gfwPsH2D5h84+MfHPhnwb4N8DeBvAfgPwDg=="},{"char":"O","shape":[19,16],"bits":"A+AP+Bw8OA5wBmAHYAdgA+AD4APgA2ADYAdgBnAOOA4cPA/4A+A="},{"char":"P","shape":[19,12],"bits":"/w/8wOwGwHwHwGwGwO/8/wwAwAwAwAwAwAwAwAA="},{"char":"Q","shape":[23,16],"bits":"A+AP+Bw8OA5wBmAHYAdgA+AD4APgA2ADYAdwBnAGOA4cHA/4B+ABwADgAH8AHw=="},{"char":"R","shape":[19,12],"bits":"/4/8wOwGwHwHwHwGwe/8/wxww4wYwcwMwOwGwHA="},{"char":"S","shape":[19,13],"bits":"D4D/DhzgBgA4AcAHgB8APgB8AOADgBwA6Abwcf8H8A=="},{"char":"T","shape":[19,13],"bits":"////wcAOAHADgBwA4AcAOAHADgBwA4AcAOAHADgBwA=="},{"char":"U","shape":[19,14],"bits":"4B+AfgH4B+AfgH4B+AfgH4B+AfgH4B2AZgGcDjhwf4D8AA=="},{"char":"V","shape":[19,14],"bits":"4A+ANgHYBnAYwOMDDgwYMGGBhgMYDOAzAOwBsAeAHgA4AA=="},{"char":"W","shape":[19,20],"bits":"wGA8BgPA8D4PB2DwZgsGYZhmGYZxmOMZjDMMwzDMMwzDsMwaBYHgeB4HgeB4HAOA"},{"char":"X","shape":[19,13],"bits":"4DMDnBhhw4wM4HYB8A8AOAPAPwGYHODDDhxgdwGwDg=="},{"char":"Y","shape":[19,13],"bits":"4BsB3Axg4wYMcGMDmA2AfAHADgBwA4AcAOAHADgBwA=="},{"char":"Z","shape":[19,13],"bits":"f/v/wAwAwA4AYAcAcAMAOAGAHAHADADgBgBgB////g=="}]};
+
+  function dacBuildMap() {
+    const map = new Map();
+    for (const t of DAC.templates) {
+      const gh = t.shape[0], gw = t.shape[1], bin = atob(t.bits);
+      let bits = "";
+      for (let i = 0; i < bin.length; i++) bits += bin.charCodeAt(i).toString(2).padStart(8, "0");
+      map.set(gh + "x" + gw + ":" + bits.slice(0, gh * gw), t.char);
+    }
+    return map;
+  }
+
+  // 取像素的方式抽成 callback，測試時可直接餵陣列。
+  function dacGlyphKeys(getPixel, w, h) {
+    const stat = new Map();
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const p = getPixel(y, x), k = p[0] * 65536 + p[1] * 256 + p[2];
+      stat.set(k, (stat.get(k) || 0) + 1);
+    }
+    // 背景色由網址的 r/g/b 決定，只能取眾數；寫死灰階門檻會在登入頁的藍底
+    // （亮度 144 > 128）把整張圖反過來。
+    let bg = -1, bgn = -1;
+    for (const kv of stat) if (kv[1] > bgn) { bgn = kv[1]; bg = kv[0]; }
+    const ink = (y, x) => { const p = getPixel(y, x); return p[0] * 65536 + p[1] * 256 + p[2] !== bg; };
+
+    const runs = []; let start = null;
+    for (let x = 0; x < w; x++) {
+      let filled = false;
+      for (let y = 0; y < h; y++) if (ink(y, x)) { filled = true; break; }
+      if (filled && start === null) start = x;
+      if (!filled && start !== null) { runs.push([start, x - 1]); start = null; }
+    }
+    if (start !== null) runs.push([start, w - 1]);
+
+    return runs.map(function (r) {          // 不設最小寬度：I 只有 1px 寬
+      const l = r[0], rt = r[1];
+      let top = -1, bot = -1;
+      for (let y = 0; y < h; y++) {
+        let any = false;
+        for (let x = l; x <= rt; x++) if (ink(y, x)) { any = true; break; }
+        if (any) { if (top < 0) top = y; bot = y; }
+      }
+      let bits = "";
+      for (let y = top; y <= bot; y++) for (let x = l; x <= rt; x++) bits += ink(y, x) ? "1" : "0";
+      return (bot - top + 1) + "x" + (rt - l + 1) + ":" + bits;
+    });
+  }
+
+  function dacRecognizeImage(img, map) {
+    const h = DAC.image_size[0], w = DAC.image_size[1];
+    if (img.naturalWidth !== w || img.naturalHeight !== h) {
+      throw new Error("驗證碼尺寸 " + img.naturalWidth + "x" + img.naturalHeight + " 與模板不符");
+    }
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    const ctx = cv.getContext("2d"); ctx.drawImage(img, 0, 0);
+    const data = ctx.getImageData(0, 0, w, h).data;
+    const keys = dacGlyphKeys((y, x) => { const i = (y * w + x) * 4; return [data[i], data[i + 1], data[i + 2]]; }, w, h);
+    if (keys.length !== 4) throw new Error("切出 " + keys.length + " 個字元");
+    return keys.map(function (k) {
+      const c = map.get(k);
+      if (!c) throw new Error("字形不在模板表中，驗證碼樣式可能已改版");
+      return c;
+    }).join("");
+  }
+
+  function dacAwaitImage(img) {
+    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+    return new Promise(function (resolve, reject) {
+      img.addEventListener("load", resolve, { once: true });
+      img.addEventListener("error", () => reject(new Error("驗證碼圖片載入失敗")), { once: true });
+    });
+  }
+
+  async function startOAuth2Fill() {
+    const input = document.querySelector("#code") || document.querySelector('[name="authcode"]');
+    const img = document.querySelector("#authImage");
+    if (!input || !img) return;
+
+    const badge = document.createElement("div");
+    badge.style.cssText = "margin:6px 0;font:12px/1.6 system-ui,sans-serif;color:#0a58ca";
+    input.insertAdjacentElement("afterend", badge);
+    const map = dacBuildMap();
+
+    async function run() {
+      for (let attempt = 1; attempt <= 6; attempt++) {
+        try {
+          await dacAwaitImage(img);
+          // 直接讀已顯示的那張圖，不另外 fetch——每次請求 dacAuthImage.do 都會換一組
+          // 答案，另外抓會讓畫面上的圖和有效答案對不起來。
+          input.value = dacRecognizeImage(img, map);
+          badge.style.color = "#2a6";
+          badge.textContent = "已自動填入驗證碼（請自行確認後按登入）";
+          return;
+        } catch (e) {
+          if (attempt === 6) {
+            badge.style.color = "#c0392b";
+            badge.textContent = "驗證碼自動辨識失敗，請手動輸入（" + e.message + "）";
+            return;
+          }
+          badge.textContent = "辨識失敗，換一張重試…（" + attempt + "/6）";
+          try { unsafeWindow.reloadRedo(); } catch (e2) {
+            img.src = "dacAuthImage.do?r=86&g=153&b=247&w=100&h=35&fontSize=25&t=" + Date.now();
+          }
+          await new Promise((r) => setTimeout(r, 200));
+        }
+      }
+    }
+
+    // 使用者按頁面上的「重整」時重新辨識
+    const redo = document.querySelector('a[href*="reloadRedo"]');
+    if (redo) redo.addEventListener("click", () => setTimeout(run, 250));
+    run();
+  }
+
+  if (location.pathname === "/oauth2Server.do") {
+    startOAuth2Fill();
+    return; // OAuth2 頁不需要 CharNet，別白解 253KB 權重
   }
 
   if (location.pathname !== "/index.do") {
