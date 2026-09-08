@@ -1,0 +1,138 @@
+[
+ {
+  "name": "00000.png",
+  "expected": "179199",
+  "w": 60,
+  "h": 10,
+  "bg": [
+   235,
+   235,
+   235
+  ],
+  "fg": [
+   255,
+   0,
+   0
+  ],
+  "mask": "CA/BwCAcBwOAiCIOAjCICAiCECAhCECAECECAhCECQECMCAjCMCAIB0CEdB0CAIAECABAECAIAESABAECAICIDAiCIPgIBwPgcBw"
+ },
+ {
+  "name": "00001.png",
+  "expected": "381306",
+  "w": 60,
+  "h": 10,
+  "bg": [
+   235,
+   235,
+   235
+  ],
+  "fg": [
+   255,
+   0,
+   0
+  ],
+  "mask": "HgeAgHgeA4IQhDgIQhBEIQhAgIQhCAAghAgAgtiADAeAgDAtC4AkSAgAgtDEAQhAgAQtCEIQhAgIQhCEIQhggIQhCEHgeD4HgeB4"
+ },
+ {
+  "name": "00002.png",
+  "expected": "729110",
+  "w": 60,
+  "h": 10,
+  "bg": [
+   235,
+   235,
+   235
+  ],
+  "fg": [
+   255,
+   0,
+   0
+  ],
+  "mask": "PweBwCAID4IghKIOA4CEIghCECAICEBABCECAIC0BACCMCAIC0CAEB0CAIC0SAIAECAIK0CCQAECAMCECAhCICAICECA/BwPo+B4"
+ },
+ {
+  "name": "00003.png",
+  "expected": "909808",
+  "w": 60,
+  "h": 10,
+  "bg": [
+   235,
+   235,
+   235
+  ],
+  "fg": [
+   255,
+   0,
+   0
+  ],
+  "mask": "HQeBwHweB4IghCIIQhCEIQhCEIQhCEIQtCEIQtCEIwtCMHgtB4HwtB0Ew9BIAQvAEIQtCEAQhAEIQhCEIghCIIQhCEHgeBwHgeh4"
+ },
+ {
+  "name": "00004.png",
+  "expected": "448303",
+  "w": 60,
+  "h": 10,
+  "bg": [
+   235,
+   235,
+   235
+  ],
+  "fg": [
+   255,
+   0,
+   0
+  ],
+  "mask": "BAEB4HgeB4BAECEIQhCEDAMCEIRhCEFAUCEAgtgIJCkB4DAtAwJAkBIAgtAIPw/CEAQtAEBAECEIQhCEBAECEIQhCEDwPR4HgeB4"
+ },
+ {
+  "name": "00005.png",
+  "expected": "034135",
+  "w": 60,
+  "h": 10,
+  "bg": [
+   235,
+   235,
+   235
+  ],
+  "fg": [
+   255,
+   0,
+   0
+  ],
+  "mask": "HgeAQCAeD8IQhAQOAxCIIQhAwDAhCALQCBSCACC4LQMCQCAMDMLQCCQCACAELQBD8CABAEIQpAQCAhCEIQhIQCApCFHgeA8PgeB4"
+ },
+ {
+  "name": "00006.png",
+  "expected": "562949",
+  "w": 60,
+  "h": 10,
+  "bg": [
+   235,
+   235,
+   235
+  ],
+  "fg": [
+   255,
+   0,
+   0
+  ],
+  "mask": "PwOB4HAEBwIARCEIgECIIAgCEIQMCELggAEIQcCEMQuAIIwkCMAQxAQHQkB0AQhAgAQ/AFIQhBAAQEAEIQhCEIgECIHgfD8HAPBw"
+ },
+ {
+  "name": "00007.png",
+  "expected": "578608",
+  "w": 60,
+  "h": 10,
+  "bg": [
+   235,
+   235,
+   235
+  ],
+  "fg": [
+   255,
+   0,
+   0
+  ],
+  "mask": "vw/B4DgeB4IAiCEEQhCEIAyCEIAhCELgECEIAtCEMQEB4LgtB4AQIBIMQtBIAQICGIStCEIQICEIQpCEIQJCEKQhSEHgIB4HgeB4"
+ }
+]

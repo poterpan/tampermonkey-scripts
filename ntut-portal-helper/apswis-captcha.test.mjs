@@ -17,18 +17,20 @@ function slice(from, to, label) {
 }
 
 // 請購區塊（常數 + 切字 + 前向）、權重載入器、共用的卷積/池化/線性層
-const apswisBlock = slice("  const APSWIS = {", "  if (location.hostname ===", "APSWIS 區塊");
+const apswisBlock = slice("  const APSWIS = {", "  // 請購系統有多個主機", "APSWIS 區塊");
 const weightLoader = slice("  function halfToFloat(", "  const L = loadWeights(MODEL);", "權重載入器");
 const kernels = slice("  function conv3(", "  function charForward(", "卷積核心");
 
 const api = vm.runInNewContext(
   `${apswisBlock}\n${weightLoader}\n${kernels}\n` +
-  `({ APSWIS, AP_SZ, apswisGlyphs, apswisForward, loadWeights })`,
+  `({ APSWIS, IFIRST, AP_SZ, IF_SZ, apswisGlyphs, ifirstGlyphs, charNetForward, loadWeights })`,
   { atob, Promise, Math, Uint8Array, Int32Array, Float32Array, DataView, Map },
 );
 
 const samples = JSON.parse(fs.readFileSync(
   new URL("./training/fixtures/apswis_samples.json", import.meta.url), "utf8"));
+const ifirstSamples = JSON.parse(fs.readFileSync(
+  new URL("./training/fixtures/ifirst_samples.json", import.meta.url), "utf8"));
 
 /** Rebuild a two-colour CAPTCHA's pixel reader from the packed fixture. */
 function pixelReader(s) {
@@ -44,7 +46,7 @@ function recognise(s) {
   if (!weights) weights = api.loadWeights(api.APSWIS);
   const gs = api.apswisGlyphs(pixelReader(s), s.w, s.h);
   assert.ok(gs, `${s.name}: 切字回傳 null`);
-  return gs.map((g) => api.apswisForward(g, weights)).join("");
+  return gs.map((g) => api.charNetForward(g, weights, api.APSWIS.chars, api.AP_SZ)).join("");
 }
 
 test("charset is the 22 classes the training data actually contains", () => {
@@ -94,6 +96,61 @@ test("salt noise below the size threshold is dropped", () => {
   const noisy = (y, x) => (specks.has(`${y},${x}`) ? s.fg : base(y, x));
   const gs = api.apswisGlyphs(noisy, s.w, s.h);
   assert.ok(gs, "加了雜點後切字不該失敗");
-  assert.equal(gs.map((g) => api.apswisForward(g, weights || (weights = api.loadWeights(api.APSWIS)))).join(""),
-               s.expected);
+  if (!weights) weights = api.loadWeights(api.APSWIS);
+  assert.equal(
+    gs.map((g) => api.charNetForward(g, weights, api.APSWIS.chars, api.AP_SZ)).join(""),
+    s.expected);
+});
+
+// ---- ValidCode_2（accweb.ifirst 等）：另一個產生器，10 類純數字 ----
+
+let ifWeights = null;
+function recogniseIfirst(s) {
+  if (!ifWeights) ifWeights = api.loadWeights(api.IFIRST);
+  const gs = api.ifirstGlyphs(pixelReader(s), s.w, s.h);
+  assert.ok(gs, `${s.name}: 切字回傳 null`);
+  return gs.map((g) => api.charNetForward(g, ifWeights, api.IFIRST.chars, api.IF_SZ)).join("");
+}
+
+test("ValidCode_2 charset is the ten digits", () => {
+  assert.equal(api.IFIRST.chars, "0123456789");
+  const last = api.IFIRST.manifest[api.IFIRST.manifest.length - 1];
+  assert.equal(last.w_shape[0], 10);
+});
+
+test("ValidCode_2 glyphs are centred on 16x16", () => {
+  assert.equal(api.IF_SZ, 16);
+  const gs = api.ifirstGlyphs(pixelReader(ifirstSamples[0]), ifirstSamples[0].w, ifirstSamples[0].h);
+  assert.equal(gs.length, 6);
+  for (const g of gs) assert.equal(g.length, 16 * 16);
+});
+
+// 逐位驗證：JS 前向必須與訓練時的 Python 完全一致
+for (const s of ifirstSamples) {
+  test(`ValidCode_2 matches Python on ${s.name} (${s.expected})`, () => {
+    assert.equal(recogniseIfirst(s), s.expected);
+  });
+}
+
+test("ValidCode_2 keeps digits and drops the 1-5px specks by height", () => {
+  // 數字高度一律 10px、雜訊 1~5px，空隙 6~9 完全沒有樣本，所以用高度過濾。
+  const s = ifirstSamples[0];
+  const bytes = Buffer.from(s.mask, "base64");
+  const base = (y, x) => {
+    const i = y * s.w + x;
+    return ((bytes[i >> 3] >> (7 - (i & 7))) & 1) ? s.fg : s.bg;
+  };
+  const specks = new Set(["0,1", "9,58", "1,30", "8,15"]);
+  const noisy = (y, x) => (specks.has(`${y},${x}`) ? s.fg : base(y, x));
+  const gs = api.ifirstGlyphs(noisy, s.w, s.h);
+  assert.ok(gs, "加了雜點後切字不該失敗");
+  assert.equal(gs.length, 6);
+});
+
+test("the two 請購 models are distinct and not interchangeable", () => {
+  // 兩個主機介面相同但驗證碼產生器不同；用錯模型會自信地填錯答案。
+  assert.notEqual(api.APSWIS.chars, api.IFIRST.chars);
+  assert.equal(api.APSWIS.chars.length, 22);
+  assert.equal(api.IFIRST.chars.length, 10);
+  assert.notEqual(api.AP_SZ, api.IF_SZ);
 });

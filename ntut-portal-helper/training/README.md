@@ -30,7 +30,8 @@ pip install torch numpy pillow ddddocr
 5. **匯出權重並打包成 userscript**
    ```
    python export_charnet.py   # charnet.pt → char_weights.b64 + char_manifest.json（float16）
-   python export_apswis.py    # 請購系統模型 → apswis_weights.b64 + apswis_manifest.json
+   python export_apswis.py    # 請購 ValidCode.asp 模型 → apswis_weights.b64 + manifest
+   python export_ifirst.py    # 請購 ValidCode_2.asp 模型 → ifirst_weights.b64 + manifest
    python build_userscript.py # 注入兩個模型與 OAuth2 模板 → ../ntut-portal-helper.user.js
    ```
 
@@ -60,6 +61,9 @@ pip install torch numpy pillow ddddocr
 | `export_apswis.py` | 匯出請購系統模型成 float16 + manifest（來源 checkpoint 在 NTUT_Tools） |
 | `apswis_weights.b64` / `apswis_manifest.json` | 請購系統 CharNet，22 類、cf1=32（以 `__APSWIS_*__` 佔位注入） |
 | `fixtures/apswis_samples.json` | `apswis-captcha.test.mjs` 用的真圖樣本 + Python 預測（逐位驗證用） |
+| `export_ifirst.py` | 匯出 ValidCode_2（紅色數字）模型 |
+| `ifirst_weights.b64` / `ifirst_manifest.json` | ValidCode_2 CharNet，10 類、16×16 輸入 |
+| `fixtures/ifirst_samples.json` | ValidCode_2 的逐位驗證 fixture |
 | `segment_infer.js` | JS 版分割＋CharNet 前向（供驗證與模板參考） |
 | `real_labels.py` | 手工標註的 GT 測試集（caps2/ 對應） |
 | `charnet.pt` / `char_weights.b64` / `char_manifest.json` | 訓練好的模型 |

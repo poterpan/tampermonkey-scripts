@@ -6,6 +6,7 @@
 // @author       PoterPan
 // @match        https://nportal.ntut.edu.tw/*
 // @match        https://account.ao.ntut.edu.tw/*
+// @match        https://accweb.ifirst.ntut.edu.tw/*
 // @icon         https://www.ntut.edu.tw/var/file/7/1007/msys_1007_5994215_49612.png
 // @run-at       document-idle
 // @grant        unsafeWindow
@@ -156,12 +157,15 @@
   }
 
   // ============ 功能四：網路請購系統登入頁自動填驗證碼 ============
-  // 主計室請購系統 (account.ao.ntut.edu.tw) 的驗證碼與入口網完全不同：
+  // 主計室請購系統 (account.ao.ntut.edu.tw、accweb.ifirst.ntut.edu.tw 等多個主機，
+  // 同套介面、獨立資料庫) 的驗證碼與入口網完全不同：
   // 124x24 只有兩色、5 碼、折線字體、字集 22 類 (無 0AEFGOQSTUVWYZ)、單像素鹽粒雜訊。
   // 分割靠連通元件而非顏色；模型與功能一同架構 (3conv+2fc, 40x40)，cf1 減為 32、輸出 22 類。
   // 只填驗證碼，帳密與送出留給使用者——請購送單不可逆。
   const APSWIS = { b64: "__APSWIS_WEIGHTS_B64__", manifest: __APSWIS_MANIFEST__, chars: "__APSWIS_CHARS__" };
+  const IFIRST = { b64: "__IFIRST_WEIGHTS_B64__", manifest: __IFIRST_MANIFEST__, chars: "__IFIRST_CHARS__" };
   const AP_SZ = 40, AP_MIN_PX = 20, AP_TRIES = 6;
+  const IF_SZ = 16, IF_MIN_H = 8;
 
   // 切字：去雜訊 + 8-連通元件。元件大小的空隙是 6..53 px，門檻取 20 落在中央。
   function apswisGlyphs(getPixel, w, h) {
@@ -224,8 +228,9 @@
     });
   }
 
-  function apswisForward(g, AL) {
-    let t = { d: g, C: 1, H: AP_SZ, W: AP_SZ };
+  // 兩個請購模型共用同一組前向推論（層名與形狀同族，只有輸入邊長與類別數不同）。
+  function charNetForward(g, AL, chars, sz) {
+    let t = { d: g, C: 1, H: sz, W: sz };
     t = pool2(conv3(t, AL.cc1.w, AL.cc1.ws, AL.cc1.b));
     t = pool2(conv3(t, AL.cc2.w, AL.cc2.ws, AL.cc2.b));
     t = pool2(conv3(t, AL.cc3.w, AL.cc3.ws, AL.cc3.b));
@@ -233,7 +238,69 @@
     const o = linear(hid, AL.cf2.w, AL.cf2.ws, AL.cf2.b, false);
     let bi = 0;
     for (let i = 1; i < o.length; i++) if (o[i] > o[bi]) bi = i;
-    return APSWIS.chars[bi];
+    return chars[bi];
+  }
+
+  // ValidCode_2.asp（accweb.ifirst 等）是另一個產生器：60x10、紅字、6 碼純數字。
+  // 數字高度一律 10px、雜訊碎片只有 1~5px，中間 6~9 完全沒有樣本，所以改用「高度」
+  // 過濾比用像素數乾淨；實測 600 張切字零失敗。
+  function ifirstGlyphs(getPixel, w, h) {
+    const stat = new Map();
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const p = getPixel(y, x), k = p[0] * 65536 + p[1] * 256 + p[2];
+      stat.set(k, (stat.get(k) || 0) + 1);
+    }
+    let bg = -1, bgn = -1;
+    for (const kv of stat) if (kv[1] > bgn) { bgn = kv[1]; bg = kv[0]; }
+
+    const ink = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const p = getPixel(y, x);
+      ink[y * w + x] = (p[0] * 65536 + p[1] * 256 + p[2]) !== bg ? 1 : 0;
+    }
+
+    const lab = new Int32Array(w * h), boxes = [];
+    let cur = 0;
+    for (let i = 0; i < w * h; i++) {
+      if (!ink[i] || lab[i]) continue;
+      cur++;
+      const stack = [i], px = [];
+      lab[i] = cur;
+      while (stack.length) {
+        const c = stack.pop();
+        px.push(c);
+        const cy = (c / w) | 0, cx = c % w;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const ny = cy + dy, nx = cx + dx;
+          if (ny < 0 || ny >= h || nx < 0 || nx >= w) continue;
+          const ni = ny * w + nx;
+          if (ink[ni] && !lab[ni]) { lab[ni] = cur; stack.push(ni); }
+        }
+      }
+      let x0 = w, x1 = -1, y0 = h, y1 = -1;
+      for (const c of px) {
+        const cy = (c / w) | 0, cx = c % w;
+        if (cx < x0) x0 = cx;
+        if (cx > x1) x1 = cx;
+        if (cy < y0) y0 = cy;
+        if (cy > y1) y1 = cy;
+      }
+      if (y1 - y0 + 1 < IF_MIN_H) continue;      // 雜訊碎片（高度 1~5）
+      boxes.push({ px: px, x0: x0, x1: x1, y0: y0, y1: y1 });
+    }
+    if (boxes.length !== 6) return null;
+    boxes.sort((a, b) => a.x0 - b.x0);
+
+    return boxes.map(function (bx) {
+      const gh = bx.y1 - bx.y0 + 1, gw = bx.x1 - bx.x0 + 1;
+      const out = new Float32Array(IF_SZ * IF_SZ);
+      const oy = Math.floor((IF_SZ - gh) / 2), ox = Math.floor((IF_SZ - gw) / 2);
+      for (const c of bx.px) {
+        const cy = ((c / w) | 0) - bx.y0 + oy, cx = (c % w) - bx.x0 + ox;
+        if (cy >= 0 && cy < IF_SZ && cx >= 0 && cx < IF_SZ) out[cy * IF_SZ + cx] = 1;
+      }
+      return out;
+    });
   }
 
   function apswisAwaitImage(img) {
@@ -249,6 +316,13 @@
     const img = document.querySelector('img[src*="ValidCode"]');   // 該圖沒有 id
     if (!input || !img) return;
 
+    // 兩個請購主機用不同的驗證碼產生器，靠圖片網址分辨而不是靠主機名——
+    // 這樣日後再多一個主機也會自動挑對辨識器。
+    const isV2 = /ValidCode_2/i.test(img.getAttribute("src") || "");
+    const model = isV2
+      ? { blob: IFIRST, glyphs: ifirstGlyphs, sz: IF_SZ, fail: "數字切字異常，換一張" }
+      : { blob: APSWIS, glyphs: apswisGlyphs, sz: AP_SZ, fail: "字元相黏，換一張" };
+
     const badge = document.createElement("div");
     badge.style.cssText = "margin:6px 0;font:12px/1.6 system-ui,sans-serif;color:#0a58ca";
     input.insertAdjacentElement("afterend", badge);
@@ -261,16 +335,16 @@
           const w = img.naturalWidth, h = img.naturalHeight;
           const cv = document.createElement("canvas");
           cv.width = w; cv.height = h;
-          // 直接讀畫面上這張圖，不另外 fetch——每請求一次 ValidCode.asp 伺服器就換一組
+          // 直接讀畫面上這張圖，不另外 fetch——每請求一次 ValidCode 伺服器就換一組
           // 答案，另外抓會讓畫面上的圖與填入值對不起來。
           const ctx = cv.getContext("2d");
           ctx.drawImage(img, 0, 0);
           const data = ctx.getImageData(0, 0, w, h).data;
           const getPixel = (y, x) => { const i = (y * w + x) * 4; return [data[i], data[i + 1], data[i + 2]]; };
-          const gs = apswisGlyphs(getPixel, w, h);
-          if (!gs) throw new Error("字元相黏，換一張");
-          if (!AL) AL = loadWeights(APSWIS);     // 只有真的要辨識時才解碼權重
-          input.value = gs.map((g) => apswisForward(g, AL)).join("");
+          const gs = model.glyphs(getPixel, w, h);
+          if (!gs) throw new Error(model.fail);
+          if (!AL) AL = loadWeights(model.blob);   // 只有真的要辨識時才解碼權重
+          input.value = gs.map((g) => charNetForward(g, AL, model.blob.chars, model.sz)).join("");
           badge.style.color = "#2a6";
           badge.textContent = "已自動填入驗證碼（請自行確認後按確定）";
           return;
@@ -291,7 +365,10 @@
     run();
   }
 
-  if (location.hostname === "account.ao.ntut.edu.tw") {
+  // 請購系統有多個主機（account.ao 與 accweb.ifirst 是同套介面、獨立資料庫，
+  // 驗證碼產生器相同，共用同一個模型）。新增主機時在此加入即可。
+  var APSWIS_HOSTS = ["account.ao.ntut.edu.tw", "accweb.ifirst.ntut.edu.tw"];
+  if (APSWIS_HOSTS.indexOf(location.hostname) !== -1) {
     startApswisFill();
     return; // 請購系統與入口網無關，別載入入口網的 CharNet
   }
