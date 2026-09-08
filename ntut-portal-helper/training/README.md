@@ -30,8 +30,14 @@ pip install torch numpy pillow ddddocr
 5. **匯出權重並打包成 userscript**
    ```
    python export_charnet.py   # charnet.pt → char_weights.b64 + char_manifest.json（float16）
-   python build_userscript.py # 把權重與 OAuth2 模板注入 login_template.js → ../ntut-portal-helper.user.js
+   python export_apswis.py    # 請購系統模型 → apswis_weights.b64 + apswis_manifest.json
+   python build_userscript.py # 注入兩個模型與 OAuth2 模板 → ../ntut-portal-helper.user.js
    ```
+
+   `export_apswis.py` 的來源 checkpoint 在 NTUT_Tools 的
+   `tools/apswis_captcha_training/apswis_fc32.pt`（該處也有完整的訓練管線與研究記錄）。
+   請購模型只有本入口網模型的六成大小：字形乾淨得多，全連接層 cf1 從 64 降到 32
+   後準確率不動（實測 60 張全新驗證碼整串全對）。
 
 > **產出的 `.user.js` 是編譯結果，不要手改。** 它由 `login_template.js` 產生，
 > 手改會在下次 build 時被無聲蓋掉——20260825.1 的 `classifyLoginResponse`
@@ -51,6 +57,9 @@ pip install torch numpy pillow ddddocr
 | `login_template.js` | userscript 模板（分割＋CNN 推論＋登入流程＋UI；權重以 `__WEIGHTS_B64__` 佔位） |
 | `dac_templates.json` | OAuth2 登入頁 `dacAuthImage.do` 的 26 個字形模板（以 `__DAC_TEMPLATES__` 佔位注入） |
 | `fixtures/dac_samples.json` | `dac-captcha.test.mjs` 用的真圖樣本（兩色圖，只存 bitmask） |
+| `export_apswis.py` | 匯出請購系統模型成 float16 + manifest（來源 checkpoint 在 NTUT_Tools） |
+| `apswis_weights.b64` / `apswis_manifest.json` | 請購系統 CharNet，22 類、cf1=32（以 `__APSWIS_*__` 佔位注入） |
+| `fixtures/apswis_samples.json` | `apswis-captcha.test.mjs` 用的真圖樣本 + Python 預測（逐位驗證用） |
 | `segment_infer.js` | JS 版分割＋CharNet 前向（供驗證與模板參考） |
 | `real_labels.py` | 手工標註的 GT 測試集（caps2/ 對應） |
 | `charnet.pt` / `char_weights.b64` / `char_manifest.json` | 訓練好的模型 |

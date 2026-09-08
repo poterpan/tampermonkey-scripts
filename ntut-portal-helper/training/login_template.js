@@ -2,9 +2,10 @@
 // @name         北科入口網站小幫手
 // @namespace    https://github.com/poterpan/tampermonkey-scripts/ntut-portal-helper
 // @version      __VERSION__
-// @description  臺北科大校園入口網站小幫手：①驗證碼自動辨識登入（進入新版 cloudPortal）②防閒置自動登出（可選）③OAuth2 授權登入頁自動填驗證碼（只填不送）。純本地推論、不呼叫任何外部 API；辨識失敗自動刷新重試，多次失敗回退手動。
+// @description  臺北科大校園入口網站小幫手：①驗證碼自動辨識登入（進入新版 cloudPortal）②防閒置自動登出（可選）③OAuth2 授權登入頁自動填驗證碼④網路請購系統自動填驗證碼（③④只填不送，帳密與送出留給使用者）。純本地推論、不呼叫任何外部 API；辨識失敗自動刷新重試，多次失敗回退手動。
 // @author       PoterPan
 // @match        https://nportal.ntut.edu.tw/*
+// @match        https://account.ao.ntut.edu.tw/*
 // @icon         https://www.ntut.edu.tw/var/file/7/1007/msys_1007_5994215_49612.png
 // @run-at       document-idle
 // @grant        unsafeWindow
@@ -154,6 +155,147 @@
     run();
   }
 
+  // ============ 功能四：網路請購系統登入頁自動填驗證碼 ============
+  // 主計室請購系統 (account.ao.ntut.edu.tw) 的驗證碼與入口網完全不同：
+  // 124x24 只有兩色、5 碼、折線字體、字集 22 類 (無 0AEFGOQSTUVWYZ)、單像素鹽粒雜訊。
+  // 分割靠連通元件而非顏色；模型與功能一同架構 (3conv+2fc, 40x40)，cf1 減為 32、輸出 22 類。
+  // 只填驗證碼，帳密與送出留給使用者——請購送單不可逆。
+  const APSWIS = { b64: "__APSWIS_WEIGHTS_B64__", manifest: __APSWIS_MANIFEST__, chars: "__APSWIS_CHARS__" };
+  const AP_SZ = 40, AP_MIN_PX = 20, AP_TRIES = 6;
+
+  // 切字：去雜訊 + 8-連通元件。元件大小的空隙是 6..53 px，門檻取 20 落在中央。
+  function apswisGlyphs(getPixel, w, h) {
+    const stat = new Map();
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const p = getPixel(y, x), k = p[0] * 65536 + p[1] * 256 + p[2];
+      stat.set(k, (stat.get(k) || 0) + 1);
+    }
+    let bg = -1, bgn = -1;                       // 背景取眾數，不寫死顏色
+    for (const kv of stat) if (kv[1] > bgn) { bgn = kv[1]; bg = kv[0]; }
+
+    const ink = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const p = getPixel(y, x);
+      ink[y * w + x] = (p[0] * 65536 + p[1] * 256 + p[2]) !== bg ? 1 : 0;
+    }
+
+    const lab = new Int32Array(w * h), boxes = [];
+    let cur = 0;
+    for (let i = 0; i < w * h; i++) {
+      if (!ink[i] || lab[i]) continue;
+      cur++;
+      const stack = [i], px = [];
+      lab[i] = cur;
+      while (stack.length) {
+        const c = stack.pop();
+        px.push(c);
+        const cy = (c / w) | 0, cx = c % w;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const ny = cy + dy, nx = cx + dx;
+          if (ny < 0 || ny >= h || nx < 0 || nx >= w) continue;
+          const ni = ny * w + nx;
+          if (ink[ni] && !lab[ni]) { lab[ni] = cur; stack.push(ni); }
+        }
+      }
+      if (px.length < AP_MIN_PX) continue;       // 鹽粒雜訊
+      let x0 = w, x1 = -1, y0 = h, y1 = -1;
+      for (const c of px) {
+        const cy = (c / w) | 0, cx = c % w;
+        if (cx < x0) x0 = cx;
+        if (cx > x1) x1 = cx;
+        if (cy < y0) y0 = cy;
+        if (cy > y1) y1 = cy;
+      }
+      boxes.push({ px: px, x0: x0, x1: x1, y0: y0, y1: y1 });
+    }
+    // 少於 5 塊 = 有字相黏（約 10%）。不做切割，交給呼叫端換一張——重抓是免費的。
+    if (boxes.length !== 5) return null;
+    boxes.sort((a, b) => a.x0 - b.x0);
+
+    return boxes.map(function (bx) {
+      const gh = bx.y1 - bx.y0 + 1, gw = bx.x1 - bx.x0 + 1;
+      const out = new Float32Array(AP_SZ * AP_SZ);
+      const oy = Math.floor((AP_SZ - gh) / 2), ox = Math.floor((AP_SZ - gw) / 2);
+      for (const c of bx.px) {
+        const cy = ((c / w) | 0) - bx.y0 + oy, cx = (c % w) - bx.x0 + ox;
+        if (cy >= 0 && cy < AP_SZ && cx >= 0 && cx < AP_SZ) out[cy * AP_SZ + cx] = 1;
+      }
+      return out;
+    });
+  }
+
+  function apswisForward(g, AL) {
+    let t = { d: g, C: 1, H: AP_SZ, W: AP_SZ };
+    t = pool2(conv3(t, AL.cc1.w, AL.cc1.ws, AL.cc1.b));
+    t = pool2(conv3(t, AL.cc2.w, AL.cc2.ws, AL.cc2.b));
+    t = pool2(conv3(t, AL.cc3.w, AL.cc3.ws, AL.cc3.b));
+    const hid = linear(t.d, AL.cf1.w, AL.cf1.ws, AL.cf1.b, true);
+    const o = linear(hid, AL.cf2.w, AL.cf2.ws, AL.cf2.b, false);
+    let bi = 0;
+    for (let i = 1; i < o.length; i++) if (o[i] > o[bi]) bi = i;
+    return APSWIS.chars[bi];
+  }
+
+  function apswisAwaitImage(img) {
+    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+    return new Promise(function (resolve, reject) {
+      img.addEventListener("load", resolve, { once: true });
+      img.addEventListener("error", () => reject(new Error("驗證碼圖片載入失敗")), { once: true });
+    });
+  }
+
+  async function startApswisFill() {
+    const input = document.querySelector("#CheckCode") || document.querySelector('[name="CheckCode"]');
+    const img = document.querySelector('img[src*="ValidCode"]');   // 該圖沒有 id
+    if (!input || !img) return;
+
+    const badge = document.createElement("div");
+    badge.style.cssText = "margin:6px 0;font:12px/1.6 system-ui,sans-serif;color:#0a58ca";
+    input.insertAdjacentElement("afterend", badge);
+
+    let AL = null;
+    async function run() {
+      for (let attempt = 1; attempt <= AP_TRIES; attempt++) {
+        try {
+          await apswisAwaitImage(img);
+          const w = img.naturalWidth, h = img.naturalHeight;
+          const cv = document.createElement("canvas");
+          cv.width = w; cv.height = h;
+          // 直接讀畫面上這張圖，不另外 fetch——每請求一次 ValidCode.asp 伺服器就換一組
+          // 答案，另外抓會讓畫面上的圖與填入值對不起來。
+          const ctx = cv.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          const data = ctx.getImageData(0, 0, w, h).data;
+          const getPixel = (y, x) => { const i = (y * w + x) * 4; return [data[i], data[i + 1], data[i + 2]]; };
+          const gs = apswisGlyphs(getPixel, w, h);
+          if (!gs) throw new Error("字元相黏，換一張");
+          if (!AL) AL = loadWeights(APSWIS);     // 只有真的要辨識時才解碼權重
+          input.value = gs.map((g) => apswisForward(g, AL)).join("");
+          badge.style.color = "#2a6";
+          badge.textContent = "已自動填入驗證碼（請自行確認後按確定）";
+          return;
+        } catch (e) {
+          if (attempt === AP_TRIES) {
+            badge.style.color = "#c0392b";
+            badge.textContent = "驗證碼自動辨識失敗，請手動輸入（" + e.message + "）";
+            return;
+          }
+          badge.textContent = "辨識失敗，換一張重試…（" + attempt + "/" + AP_TRIES + "）";
+          // 頁面自己的「重整」是 RE_PAGE()，會整頁重載並清掉已輸入的帳密，所以自己換 src。
+          const base = img.getAttribute("src").split("?")[0];
+          img.src = base + "?t=" + Date.now() + "_" + attempt;
+          await new Promise((r) => setTimeout(r, 200));
+        }
+      }
+    }
+    run();
+  }
+
+  if (location.hostname === "account.ao.ntut.edu.tw") {
+    startApswisFill();
+    return; // 請購系統與入口網無關，別載入入口網的 CharNet
+  }
+
   if (location.pathname === "/oauth2Server.do") {
     startOAuth2Fill();
     return; // OAuth2 頁不需要 CharNet，別白解 253KB 權重
@@ -175,20 +317,21 @@
     if (e === 0x1f) return f ? NaN : (s ? -1 : 1) * Infinity;
     return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
   }
-  function loadWeights() {
-    const bin = atob(MODEL.b64), n = bin.length, bytes = new Uint8Array(n);
+  // 參數化：nPortal 與請購系統兩個模型的權重格式相同，只有層形狀與類別數不同。
+  function loadWeights(model) {
+    const bin = atob(model.b64), n = bin.length, bytes = new Uint8Array(n);
     for (let i = 0; i < n; i++) bytes[i] = bin.charCodeAt(i);
     const dv = new DataView(bytes.buffer), f32 = new Float32Array(n / 2);
     for (let i = 0; i < f32.length; i++) f32[i] = halfToFloat(dv.getUint16(i * 2, true));
     const L = {}; let off = 0;
-    for (const m of MODEL.manifest) {
+    for (const m of model.manifest) {
       const wn = m.w_shape.reduce((a, b) => a * b, 1), bn = m.b_shape.reduce((a, b) => a * b, 1);
       L[m.name] = { w: f32.subarray(off, off + wn), ws: m.w_shape, b: f32.subarray(off + wn, off + wn + bn) };
       off += wn + bn;
     }
     return L;
   }
-  const L = loadWeights();
+  const L = loadWeights(MODEL);
 
   // ---- 顏色分割（對齊 segment.py）----
   function segmentGlyphs(getPixel) {
